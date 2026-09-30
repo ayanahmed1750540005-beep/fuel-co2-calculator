@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Fuel CO₂ Emission Calculator (IPCC)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+--bg:#eef3f5;--card:#fff;--ink:#12232e;--mut:#5b6b75;--line:#d5dee3;--acc:#e4572e;--acc2:#1b998b;--bar:#c5d3da}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1a21;--card:#16262f;--ink:#e8f0f3;--mut:#93a5af;--line:#294049;--bar:#33505c}}
+:root[data-theme="dark"]{--bg:#0e1a21;--card:#16262f;--ink:#e8f0f3;--mut:#93a5af;--line:#294049;--bar:#33505c}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*:before,*:after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 15px/1.5 "IBM Plex Sans",system-ui,sans-serif}
+.wrap{max-width:1100px;margin:0 auto;padding:20px 16px 40px}
+h1{font-size:26px;margin:0 0 4px;letter-spacing:-.01em}h2{font-size:16px;margin:0 0 10px}
+.sub{color:var(--mut);margin:0 0 18px;max-width:70ch}
+.grid{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);gap:16px}
+@media(max-width:820px){.grid{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px}
+label{display:block;font-weight:600;margin:0 0 4px}
+select,input{width:100%;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px}
+select:focus,input:focus,button:focus-visible,.row:focus-visible{outline:2px solid var(--acc2);outline-offset:1px}
+.f{margin-bottom:12px}.hint{color:var(--mut);font-size:13px;margin-top:3px}
+.res{margin-top:6px;padding:14px;border-radius:8px;background:var(--ink);color:var(--bg)}
+.res .n{font-size:38px;font-weight:700;line-height:1.1;letter-spacing:-.02em;color:var(--bg);word-break:break-word}
+.res small{opacity:.8}
+.calc{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}
+.calc div{border:1px solid var(--line);border-radius:8px;padding:8px;text-align:center}
+.calc b{display:block;font-size:15px}.calc span{font-size:12px;color:var(--mut)}
+.eq{display:flex;gap:8px;flex-wrap:wrap}.eq div{flex:1 1 130px;border-left:3px solid var(--acc2);padding:2px 10px}
+.eq b{font-size:18px;display:block}.eq span{font-size:12px;color:var(--mut)}
+.tabs{display:flex;gap:6px;margin-bottom:8px}
+button{font:inherit;cursor:pointer;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:8px;padding:6px 12px}
+button.on{background:var(--acc2);border-color:var(--acc2);color:#fff}
+.btn{background:var(--acc);border-color:var(--acc);color:#fff;font-weight:600;width:100%;padding:10px}
+.chart{max-height:430px;overflow:auto;padding-right:4px}
+.row{display:grid;grid-template-columns:150px 1fr 64px;gap:8px;align-items:center;padding:3px 4px;border-radius:6px;cursor:pointer;font-size:13px}
+.row:hover{background:var(--bg)}.row.sel{background:var(--bg);outline:1px solid var(--acc)}
+.row .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.trk{height:12px;background:transparent}.fill{height:100%;background:var(--bar);border-radius:3px}
+.row.sel .fill{background:var(--acc)}.row .v{text-align:right;font-variant-numeric:tabular-nums}
+@media(max-width:480px){.row{grid-template-columns:100px 1fr 54px}}
+table{width:100%;border-collapse:collapse;font-size:14px}th,td{text-align:left;padding:6px 4px;border-bottom:1px solid var(--line)}
+td.r,th.r{text-align:right;font-variant-numeric:tabular-nums}
+.stack{display:flex;height:14px;border-radius:4px;overflow:hidden;margin:10px 0;background:var(--line)}
+.tag{font-size:11px;background:var(--acc2);color:#fff;border-radius:4px;padding:1px 5px;margin-left:4px}
+.x{border:none;background:none;color:var(--mut);padding:0 6px}
+.full{margin-top:16px}
+a{color:var(--acc2);font-weight:500}.refs li{margin-bottom:6px}
+.tw{overflow-x:auto}
+.foot{color:var(--mut);font-size:13px;margin-top:10px}
+</style></head><body><div class="wrap">
+<h1>Fuel CO₂ Emission Calculator</h1>
+<p class="sub">Pick a fuel, enter how many kilograms you burnt, and get the CO₂ emitted using IPCC default net calorific values (NCV) and emission factors (EF).</p>
+
+<div class="grid">
+<section class="card" aria-label="Calculator">
+  <div class="f"><label for="fuel">Fuel type</label><select id="fuel"></select><div class="hint" id="src"></div></div>
+  <div class="f"><label for="kg">Amount of fuel burnt (kg)</label><input id="kg" type="number" min="0" step="any" inputmode="decimal" value="1000"></div>
+  <div class="res" aria-live="polite"><small>CO₂ emitted</small><div class="n" id="out">0 kg</div><small id="out2"></small></div>
+  <div class="calc">
+    <div><b id="cE">–</b><span>energy in fuel (GJ)</span></div>
+    <div><b id="cN">–</b><span>NCV (TJ/kg)</span></div>
+    <div><b id="cF">–</b><span>EF (kg CO₂/TJ)</span></div>
+  </div>
+  <div class="hint" id="formula" style="margin-bottom:10px"></div>
+  <div style="margin-top:14px"><button class="btn" id="add">Add to my inventory</button></div>
+</section>
+
+<section class="card" aria-label="Fuel comparison">
+  <h2>How does this fuel compare?</h2>
+  <div class="tabs" role="group" aria-label="Metric">
+    <button id="m1" class="on">CO₂ per kg of fuel</button><button id="m2">CO₂ per unit of energy</button>
+  </div>
+  <div class="hint" id="cnote" style="margin:0 0 8px"></div>
+  <div class="chart" id="chart"></div>
+  <div class="hint">Click any bar to select that fuel. Fuels without a default NCV are omitted from the per-kg view.</div>
+</section>
+</div>
+
+<section class="card full" aria-label="Inventory">
+  <h2>My inventory</h2>
+  <div id="inv"></div>
+</section>
+
+<section class="card full" aria-label="References">
+  <h2>Official IPCC references</h2>
+  <ul class="refs">
+    <li><a href="https://www.ipcc-nggip.iges.or.jp/public/2006gl/pdf/2_Volume2/V2_1_Ch1_Introduction.pdf" target="_blank" rel="noopener">2006 IPCC Guidelines, Vol. 2 Energy, Ch. 1 Introduction</a> – Table 1.2: default net calorific values (NCV).</li>
+    <li><a href="https://www.ipcc-nggip.iges.or.jp/public/2006gl/pdf/2_Volume2/V2_2_Ch2_Stationary_Combustion.pdf" target="_blank" rel="noopener">2006 IPCC Guidelines, Vol. 2 Energy, Ch. 2 Stationary Combustion</a> – Table 2.2: default CO₂ emission factors (kg/TJ).</li>
+    <li><a href="https://www.ipcc-nggip.iges.or.jp/public/gl/guidelin/ch1wb1.pdf" target="_blank" rel="noopener">Revised 1996 IPCC Guidelines, Workbook Module 1 Energy</a> – Table 1-3: selected NCVs (used for the fuels it lists).</li>
+    <li><a href="https://www.ipcc-nggip.iges.or.jp/public/2006gl/vol2.html" target="_blank" rel="noopener">2006 IPCC Guidelines, Volume 2 landing page</a> (all chapters).</li>
+    <li><a href="https://www.ipcc-nggip.iges.or.jp/EFDB/main.php" target="_blank" rel="noopener">IPCC Emission Factor Database (EFDB)</a> – for country- or technology-specific factors.</li>
+  </ul>
+  <div class="foot"><b>Method:</b> CO₂ (kg) = fuel (kg) × NCV (TJ/kg) × EF (kg CO₂/TJ). NCV in TJ/kg = TJ per 10³ tonnes ÷ 10⁶. The EF already assumes complete oxidation. Results cover CO₂ only (no CH₄ or N₂O). Fuels in the 1996 Workbook table use its NCV; all others use the 2006 Table 1.2 default. Biomass CO₂ is an information item under IPCC 2006 and is not counted in totals. Industrial Wastes has no default NCV.</div>
+</section>
+</div>
+<script>
+// [name, group, NCV TJ/10^3 t (null = none), EF kg CO2/TJ, NCV source: 96 = 1996 Workbook Table 1-3, 06 = 2006 Table 1.2]
+const F=[
+["Crude Oil","Liquid fossil",42.3,73300,6],["Orimulsion","Liquid fossil",27.5,77000,96],["Natural Gas Liquids","Liquid fossil",44.2,64200,6],
+["Motor Gasoline","Liquid fossil",44.8,69300,96],["Aviation Gasoline","Liquid fossil",44.3,70000,6],["Jet Gasoline","Liquid fossil",44.3,70000,6],
+["Jet Kerosene","Liquid fossil",44.59,71500,96],["Other Kerosene","Liquid fossil",44.75,71900,96],["Shale Oil","Liquid fossil",36,73300,96],
+["Gas/Diesel Oil","Liquid fossil",43.33,74100,96],["Residual Fuel Oil","Liquid fossil",40.19,77400,96],["Liquefied Petroleum Gases (LPG)","Liquid fossil",47.31,63100,96],
+["Ethane","Liquid fossil",47.49,61600,96],["Naphtha","Liquid fossil",45.01,73300,96],["Bitumen","Liquid fossil",40.19,80700,96],["Lubricants","Liquid fossil",40.19,73300,96],
+["Petroleum Coke","Liquid fossil",31,97500,96],["Refinery Feedstocks","Liquid fossil",44.8,73300,96],["Refinery Gas","Liquid fossil",48.15,57600,96],
+["Paraffin Waxes","Liquid fossil",40.2,73300,6],["White Spirit and SBP","Liquid fossil",40.2,73300,6],["Other Petroleum Products","Liquid fossil",40.19,73300,96],
+["Anthracite","Solid fossil",26.7,98300,6],["Coking Coal","Solid fossil",28.2,94600,6],["Other Bituminous Coal","Solid fossil",25.8,94600,6],
+["Sub-Bituminous Coal","Solid fossil",18.9,96100,6],["Lignite","Solid fossil",11.9,101000,6],["Oil Shale and Tar Sands","Solid fossil",9.4,107000,96],
+["Brown Coal Briquettes","Solid fossil",20.7,97500,6],["Patent Fuel","Solid fossil",20.7,97500,6],["Coke Oven Coke and Lignite Coke","Solid fossil",28.2,107000,6],
+["Gas Coke","Solid fossil",28.2,107000,6],["Coal Tar","Solid fossil",28,80700,96],
+["Gas Works Gas","Derived gases",38.7,44400,6],["Coke Oven Gas","Derived gases",38.7,44400,6],["Blast Furnace Gas","Derived gases",2.47,260000,6],["Oxygen Steel Furnace Gas","Derived gases",7.06,182000,6],
+["Natural Gas","Natural gas",48,56100,6],
+["Municipal Wastes (non-biomass fraction)","Waste & peat",10,91700,6],["Industrial Wastes","Waste & peat",null,143000,0],["Waste Oils","Waste & peat",40.2,73300,6],["Peat","Waste & peat",9.76,106000,6],
+["Wood / Wood Waste","Biomass",15.6,112000,6],["Sulphite lyes (Black Liquor)","Biomass",11.8,95300,6],["Other Primary Solid Biomass","Biomass",11.6,100000,6],["Charcoal","Biomass",29.5,112000,6],
+["Biogasoline","Biomass",27,70800,6],["Biodiesels","Biomass",27,70800,6],["Other Liquid Biofuels","Biomass",27.4,79600,6],
+["Landfill Gas","Biomass",50.4,54600,6],["Sludge Gas","Biomass",50.4,54600,6],["Other Biogas","Biomass",50.4,54600,6],["Municipal Wastes (biomass fraction)","Biomass",11.6,100000,6]];
+const $=id=>document.getElementById(id);
+let metric=1,inv=[];
+const fmt=n=>!isFinite(n)?"–":Math.abs(n)>=100?n.toLocaleString(undefined,{maximumFractionDigits:0}):Math.abs(n)>=1?n.toLocaleString(undefined,{maximumFractionDigits:2}):n.toPrecision(3);
+const sci=n=>n.toExponential(2).replace("e-","×10⁻").replace("e+","×10");
+const isBio=f=>f[1]==="Biomass";
+const perKg=f=>f[2]==null?null:f[2]*f[3]/1e6;   // kg CO2 per kg fuel
+const perGJ=f=>f[3]/1000;                        // kg CO2 per GJ
+// build select
+const groups=[...new Set(F.map(f=>f[1]))];
+$("fuel").innerHTML=groups.map(g=>`<optgroup label="${g}">`+F.map((f,i)=>f[1]===g?`<option value="${i}">${f[0]}</option>`:"").join("")+"</optgroup>").join("");
+$("fuel").value=F.findIndex(f=>f[0]==="Gas/Diesel Oil");
+function cur(){const f=F[+$("fuel").value],kg=Math.max(0,parseFloat($("kg").value)||0);
+ const ncv=f[2]==null?null:f[2]/1e6,tj=ncv==null?null:kg*ncv,co2=tj==null?null:tj*f[3];return{f,kg,ncv,tj,co2}}
+function render(){const{f,kg,ncv,tj,co2}=cur();
+ $("src").textContent=f[4]===96?"NCV: 1996 IPCC Workbook Table 1-3 · EF: 2006 IPCC Table 2.2":f[4]===6?"NCV: 2006 IPCC Table 1.2 · EF: 2006 IPCC Table 2.2":"No IPCC default NCV for this fuel – cannot convert mass to energy";
+ if(co2==null){$("out").textContent="n/a";$("out2").textContent="No default NCV published for this fuel.";["cE","cN"].forEach(i=>$(i).textContent="–");$("formula").textContent="";}
+ else{$("out").textContent=fmt(co2)+" kg CO₂";
+  $("out2").textContent=`${fmt(co2/1000)} tonnes CO₂`+(isBio(f)?" · biomass: reported as an information item, not in totals":"");
+  $("cE").textContent=fmt(tj*1000);$("cN").textContent=sci(ncv);
+  $("formula").textContent=`${fmt(kg)} kg × ${sci(ncv)} TJ/kg × ${f[3].toLocaleString()} kg CO₂/TJ = ${fmt(co2)} kg CO₂`;}
+ $("cF").textContent=f[3].toLocaleString();
+ chart();}
+function chart(){const sel=+$("fuel").value;
+ const rows=F.map((f,i)=>({i,f,v:metric===1?perKg(f):perGJ(f)})).filter(r=>r.v!=null).sort((a,b)=>b.v-a.v);
+ const max=rows[0].v,unit=metric===1?"kg/kg":"kg/GJ";
+ $("chart").innerHTML=rows.map(r=>`<div class="row${r.i===sel?" sel":""}" data-i="${r.i}" tabindex="0" role="button" aria-label="${r.f[0]} ${fmt(r.v)} ${unit}"><span class="nm" title="${r.f[0]}">${r.f[0]}</span><div class="trk"><div class="fill" style="width:${Math.max(1,r.v/max*100)}%"></div></div><span class="v">${fmt(r.v)}</span></div>`).join("");
+ const pos=rows.findIndex(r=>r.i===sel),f=F[sel];
+ $("cnote").textContent=pos<0?"This fuel has no NCV, so it is not ranked in this view.":`${f[0]} ranks #${pos+1} of ${rows.length} (${fmt(rows[pos].v)} ${unit}). Bars show ${metric===1?"kg CO₂ emitted per kg of fuel burnt":"kg CO₂ per GJ of energy released – how carbon-intensive the energy itself is"}.`;
+ const s=$("chart").querySelector(".sel");if(s)$("chart").scrollTop=Math.max(0,s.offsetTop-$("chart").clientHeight/2);}
+function renderInv(){
+ if(!inv.length){$("inv").innerHTML='<p class="sub" style="margin:0">Nothing here yet. Choose a fuel, enter an amount, and select “Add to my inventory” to total several fuels together.</p>';return}
+ const tot=inv.filter(e=>!e.bio).reduce((s,e)=>s+e.co2,0),bio=inv.filter(e=>e.bio).reduce((s,e)=>s+e.co2,0);
+ const cols=["#e4572e","#1b998b","#f2a541","#5b7db1","#9b5de5","#8d99ae","#c1666b"];
+ const stack=tot>0?inv.map((e,k)=>e.bio?"":`<div title="${e.name}: ${fmt(e.co2)} kg" style="width:${e.co2/tot*100}%;background:${cols[k%cols.length]}"></div>`).join(""):"";
+ $("inv").innerHTML=`<div class="stack">${stack}</div><div class="tw"><table><tr><th>Fuel</th><th class="r">Fuel (kg)</th><th class="r">CO₂ (kg)</th><th class="r">Share</th><th></th></tr>`+
+ inv.map((e,k)=>`<tr><td><span style="color:${e.bio?"var(--mut)":cols[k%cols.length]}">●</span> ${e.name}${e.bio?'<span class="tag">biomass</span>':""}</td><td class="r">${fmt(e.kg)}</td><td class="r">${fmt(e.co2)}</td><td class="r">${e.bio||!tot?"–":(e.co2/tot*100).toFixed(1)+"%"}</td><td><button class="x" data-r="${k}" aria-label="Remove ${e.name}">✕</button></td></tr>`).join("")+
+ `<tr><th>Total (excluding biomass)</th><th></th><th class="r">${fmt(tot)}</th><th class="r">${tot?"100%":"–"}</th><th></th></tr></table></div><div class="hint">${fmt(tot/1000)} tonnes CO₂`+(bio?` · plus ${fmt(bio)} kg biomass CO₂ (information item)`:"")+` · <button class="x" id="clr" style="text-decoration:underline">Clear all</button></div>`;}
+$("fuel").onchange=render;$("kg").oninput=render;
+$("m1").onclick=()=>{metric=1;$("m1").className="on";$("m2").className="";chart()};
+$("m2").onclick=()=>{metric=2;$("m2").className="on";$("m1").className="";chart()};
+$("chart").onclick=e=>{const r=e.target.closest(".row");if(r){$("fuel").value=r.dataset.i;render()}};
+$("chart").onkeydown=e=>{if(e.key==="Enter"||e.key===" "){const r=e.target.closest(".row");if(r){e.preventDefault();$("fuel").value=r.dataset.i;render()}}};
+$("add").onclick=()=>{const c=cur();if(c.co2==null||c.kg<=0){$("kg").focus();return}
+ const ex=inv.find(e=>e.name===c.f[0]);if(ex){ex.kg+=c.kg;ex.co2+=c.co2}else inv.push({name:c.f[0],kg:c.kg,co2:c.co2,bio:isBio(c.f)});renderInv()};
+$("inv").onclick=e=>{if(e.target.dataset.r!==undefined){inv.splice(+e.target.dataset.r,1);renderInv()}if(e.target.id==="clr"){inv=[];renderInv()}};
+render();renderInv();
+</script></body></html>
